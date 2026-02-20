@@ -1,18 +1,16 @@
 // MOTOIL — Service Worker
-// Strategia: Cache-First per assets locali, Network-First per Google Fonts
-
-const CACHE_NAME = 'motoil-v1';
+const CACHE_NAME = 'motoil-v2';
 
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-// Font da Google Fonts (cacheati al primo caricamento)
 const FONT_ORIGINS = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 
-// ── INSTALL: pre-cacha gli asset principali ──
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -21,7 +19,6 @@ self.addEventListener('install', event => {
   );
 });
 
-// ── ACTIVATE: elimina vecchie cache ──
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -34,11 +31,9 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── FETCH: strategia ibrida ──
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Font Google: Cache-First (stale-while-revalidate)
   if (FONT_ORIGINS.some(origin => event.request.url.startsWith(origin))) {
     event.respondWith(
       caches.open(CACHE_NAME).then(cache =>
@@ -46,7 +41,7 @@ self.addEventListener('fetch', event => {
           const networkFetch = fetch(event.request).then(response => {
             cache.put(event.request, response.clone());
             return response;
-          }).catch(() => cached); // se offline, usa il cache
+          }).catch(() => cached);
           return cached || networkFetch;
         })
       )
@@ -54,22 +49,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Asset locali: Cache-First
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(event.request).then(cached => {
         if (cached) return cached;
         return fetch(event.request).then(response => {
-          // Cacha la risposta per dopo
           if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           }
           return response;
         }).catch(() => {
-          // Fallback: se è una navigazione, ritorna index.html
           if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
+            return caches.match('./index.html');
           }
         });
       })
@@ -77,6 +69,5 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Tutto il resto: rete normale
   event.respondWith(fetch(event.request));
 });
