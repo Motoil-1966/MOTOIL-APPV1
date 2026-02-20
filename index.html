@@ -17,16 +17,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;600;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b0c0e;
-      --surface: #131518;
-      --border: #2a2d33;
-      --amber: #e8a020;
-      --amber-dim: #7a5010;
-      --amber-glow: rgba(232, 160, 32, 0.18);
-      --red: #d94040;
-      --green: #3abf6a;
-      --text: #d4c9b0;
-      --muted: #5a5650;
+      --bg: #1a1c21;
+      --surface: #22252c;
+      --border: #3d4250;
+      --amber: #f0b030;
+      --amber-dim: #a06820;
+      --amber-glow: rgba(240, 176, 48, 0.22);
+      --red: #e85555;
+      --green: #50d080;
+      --text: #e8e0cc;
+      --muted: #8a8480;
       --mono: 'Share Tech Mono', monospace;
       --display: 'Barlow Condensed', sans-serif;
     }
@@ -101,7 +101,7 @@
       font-size: 0.65rem;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #9a9490;
     }
 
     .dot {
@@ -152,7 +152,7 @@
       font-family: var(--display);
       font-weight: 800;
       font-size: 1.1rem;
-      color: var(--amber-dim);
+      color: var(--amber);
       min-width: 24px;
     }
 
@@ -162,7 +162,7 @@
       font-size: 0.75rem;
       letter-spacing: 0.25em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #b0aaaa;
     }
 
     .panel-body { padding: 1.5rem 1.2rem; }
@@ -315,7 +315,7 @@
     .stat-unit {
       font-size: 0.6rem;
       letter-spacing: 0.2em;
-      color: var(--muted);
+      color: #9a9490;
       text-transform: uppercase;
     }
 
@@ -337,7 +337,7 @@
       font-size: 0.6rem;
       letter-spacing: 0.25em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #9a9490;
     }
 
     .field-row {
@@ -416,7 +416,7 @@
       line-height: 1.7;
       max-height: 180px;
       overflow-y: auto;
-      color: var(--muted);
+      color: #b0aaa0;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
     }
@@ -431,7 +431,7 @@
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-    .log-time { color: var(--amber-dim); min-width: 70px; }
+    .log-time { color: var(--amber); min-width: 70px; }
     .log-msg.ok { color: var(--green); }
     .log-msg.err { color: var(--red); }
     .log-msg.info { color: var(--text); }
@@ -464,7 +464,7 @@
       margin-bottom: 0.5rem;
     }
 
-    .ble-warning p { font-size: 0.7rem; color: var(--muted); line-height: 1.7; }
+    .ble-warning p { font-size: 0.7rem; color: #b0aaa0; line-height: 1.7; }
     .ble-warning code { color: var(--text); background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 2px; }
 
     /* ── FOOTER ── */
@@ -477,7 +477,7 @@
       display: flex;
       justify-content: space-between;
       font-size: 0.58rem;
-      color: var(--muted);
+      color: #9a9490;
       letter-spacing: 0.15em;
       text-transform: uppercase;
       position: relative;
@@ -642,8 +642,8 @@
         <div class="field">
           <label>Gocce / erogazione</label>
           <div class="field-row">
-            <input type="range" id="cfg-gocce" min="1" max="20" value="1" oninput="updateLabel('cfg-gocce','lbl-gocce')" />
-            <span class="field-val" id="lbl-gocce">1</span>
+            <input type="range" id="cfg-gocce" min="1" max="3" step="1" value="1" oninput="updateGocceLabel()" />
+            <span class="field-val" id="lbl-gocce">3s</span>
           </div>
         </div>
       </div>
@@ -697,11 +697,17 @@
 
   function updateSliderLabels() {
     updateLabel('cfg-periodo', 'lbl-periodo');
-    updateLabel('cfg-gocce',   'lbl-gocce');
+    updateGocceLabel();
   }
 
   function updateLabel(sliderId, labelId) {
     document.getElementById(labelId).textContent = document.getElementById(sliderId).value;
+  }
+
+  function updateGocceLabel() {
+    const step = parseInt(document.getElementById('cfg-gocce').value);
+    const seconds = step * 3; // 1→3s, 2→6s, 3→9s
+    document.getElementById('lbl-gocce').textContent = seconds + 's';
   }
 
   // ── BLE CONNECT / DISCONNECT ──────────────────
@@ -766,19 +772,20 @@
 
   async function sendConfig() {
     const p = parseInt(document.getElementById('cfg-periodo').value);
-    const g = parseInt(document.getElementById('cfg-gocce').value);
+    const step = parseInt(document.getElementById('cfg-gocce').value);
+    const g = step * 3; // 1→3s, 2→6s, 3→9s
     const cmd = `CFG:${p}:${g}`;
     if (!characteristic) return;
     try {
       const encoder = new TextEncoder();
       await characteristic.writeValue(encoder.encode(cmd));
-      log(`→ ${cmd}  (ogni ${p}min, ${g} gocc${g===1?'ia':'e'})`, 'sent');
+      log(`→ ${cmd}  (ogni ${p}min, ${g} secondi erogazione)`, 'sent');
       // Config attiva automaticamente il sistema
       sysState = true;
       updateSysState();
       // Aggiorna le stat visive
       document.getElementById('stat-freq').textContent = p;
-      document.getElementById('stat-gocce').textContent = g;
+      document.getElementById('stat-gocce').textContent = g + 's';
     } catch (e) {
       log(`Errore invio config: ${e.message}`, 'err');
     }
