@@ -771,21 +771,20 @@
   }
 
   async function sendConfig() {
-    const p = parseInt(document.getElementById('cfg-periodo').value);
+    const p    = parseInt(document.getElementById('cfg-periodo').value);
     const step = parseInt(document.getElementById('cfg-gocce').value);
-    const g = step * 3; // 1→3s, 2→6s, 3→9s
-    const cmd = `CFG:${p}:${g}`;
+    const cmd  = `CFG:${p}:${step}`; // invia le GOCCE, la conversione in ms la fa lo sketch
     if (!characteristic) return;
     try {
       const encoder = new TextEncoder();
       await characteristic.writeValue(encoder.encode(cmd));
-      log(`→ ${cmd}  (ogni ${p}min, ${g} secondi erogazione)`, 'sent');
+      log(`→ ${cmd}  (ogni ${p}min, ${step} gocce / ${step * 3}s erogazione)`, 'sent');
       // Config attiva automaticamente il sistema
       sysState = true;
       updateSysState();
       // Aggiorna le stat visive
-      document.getElementById('stat-freq').textContent = p;
-      document.getElementById('stat-gocce').textContent = g + 's';
+      document.getElementById('stat-freq').textContent  = p;
+      document.getElementById('stat-gocce').textContent = (step * 3) + 's';
     } catch (e) {
       log(`Errore invio config: ${e.message}`, 'err');
     }
