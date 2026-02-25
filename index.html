@@ -98,8 +98,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.65rem;
-      letter-spacing: 0.15em;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: #9a9490;
     }
@@ -151,16 +152,16 @@
     .panel-num {
       font-family: var(--display);
       font-weight: 800;
-      font-size: 1.1rem;
+      font-size: 1.50rem;
       color: var(--amber);
       min-width: 24px;
     }
 
     .panel-title {
       font-family: var(--display);
-      font-weight: 600;
-      font-size: 0.75rem;
-      letter-spacing: 0.25em;
+      font-weight: 700;
+      font-size: 1.10rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: #b0aaaa;
     }
@@ -175,9 +176,9 @@
       border: 1px solid var(--amber-dim);
       color: var(--amber);
       font-family: var(--display);
-      font-weight: 600;
-      font-size: 1rem;
-      letter-spacing: 0.3em;
+      font-weight: 700;
+      font-size: 1.35rem;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
       cursor: pointer;
       border-radius: 2px;
@@ -214,7 +215,7 @@
       border: 1px solid;
       font-family: var(--display);
       font-weight: 800;
-      font-size: 1.6rem;
+      font-size: 1.9rem;
       letter-spacing: 0.1em;
       cursor: pointer;
       border-radius: 2px;
@@ -251,7 +252,7 @@
     .btn-off.active-state { border-color: var(--red); background: rgba(217,64,64,0.08); }
 
     .btn-power:disabled { opacity: 0.25; cursor: not-allowed; }
-    .btn-power .sub { display: block; font-size: 0.55rem; font-family: var(--mono); letter-spacing: 0.2em; font-weight: 400; margin-top: 4px; opacity: 0.7; }
+    .btn-power .sub { display: block; font-size: 1.08rem; font-family: var(--mono); letter-spacing: 0.18em; font-weight: 700; margin-top: 4px; opacity: 0.7; }
 
     /* ── PUMP VISUALIZER ── */
     .pump-viz {
@@ -306,15 +307,16 @@
     .stat-val {
       font-family: var(--display);
       font-weight: 800;
-      font-size: 1.8rem;
+      font-size: 2.2rem;
       color: var(--amber);
       line-height: 1;
       min-width: 60px;
     }
 
     .stat-unit {
-      font-size: 0.6rem;
-      letter-spacing: 0.2em;
+      font-size: 1.00rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
       color: #9a9490;
       text-transform: uppercase;
     }
@@ -334,8 +336,9 @@
     }
 
     .field label {
-      font-size: 0.6rem;
-      letter-spacing: 0.25em;
+      font-size: 1.00rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: #9a9490;
     }
@@ -382,8 +385,8 @@
 
     .field-val {
       font-family: var(--display);
-      font-weight: 600;
-      font-size: 1.1rem;
+      font-weight: 700;
+      font-size: 1.50rem;
       color: var(--amber);
       padding: 0 12px 0 4px;
       min-width: 50px;
@@ -399,8 +402,8 @@
       border-radius: 2px;
       font-family: var(--display);
       font-weight: 800;
-      font-size: 0.85rem;
-      letter-spacing: 0.3em;
+      font-size: 1.20rem;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
       cursor: pointer;
       transition: opacity 0.2s, transform 0.15s;
@@ -412,7 +415,7 @@
 
     /* ── LOG ── */
     .log-wrap {
-      font-size: 0.72rem;
+      font-size: 1.08rem;
       line-height: 1.7;
       max-height: 180px;
       overflow-y: auto;
@@ -458,13 +461,13 @@
     .ble-warning h3 {
       font-family: var(--display);
       font-weight: 800;
-      font-size: 1.2rem;
+      font-size: 1.60rem;
       color: #e86020;
       letter-spacing: 0.1em;
       margin-bottom: 0.5rem;
     }
 
-    .ble-warning p { font-size: 0.7rem; color: #b0aaa0; line-height: 1.7; }
+    .ble-warning p { font-size: 1.10rem; font-weight: 700; color: #b0aaa0; line-height: 1.7; }
     .ble-warning code { color: var(--text); background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 2px; }
 
     /* ── FOOTER ── */
@@ -476,9 +479,10 @@
       border-top: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
-      font-size: 0.58rem;
+      font-size: 0.95rem;
+      font-weight: 700;
       color: #9a9490;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       position: relative;
       z-index: 1;
@@ -512,8 +516,9 @@
       background: #3a2000;
       border: 1px solid var(--amber-dim);
       color: var(--amber);
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       padding: 0.5rem 1.2rem;
       border-radius: 2px;
@@ -532,8 +537,9 @@
       border: 1px dashed var(--amber-dim);
       color: var(--muted);
       font-family: var(--mono);
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       cursor: pointer;
       border-radius: 2px;
