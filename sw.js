@@ -1,73 +1,57 @@
-// MOTOIL — Service Worker
-const CACHE_NAME = 'motoil-v2';
+const CACHE_NAME = 'motoil-v3'; // incrementa versione ad ogni deploy
 
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json'
 ];
 
-const FONT_ORIGINS = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
-
+// Installa e mette in cache le risorse principali
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
+// Rimuove le vecchie cache e prende possesso dei client
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
       )
     ).then(() => self.clients.claim())
   );
 });
 
+// Strategia: network-first con fallback su cache
+// Se la rete è assente, risponde dalla cache (fondamentale per iOS)
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
+  // Ignora richieste non-GET e richieste cross-origin
+  if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith(self.location.origin)) return;
 
-  if (FONT_ORIGINS.some(origin => event.request.url.startsWith(origin))) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache =>
-        cache.match(event.request).then(cached => {
-          const networkFetch = fetch(event.request).then(response => {
-            cache.put(event.request, response.clone());
-            return response;
-          }).catch(() => cached);
-          return cached || networkFetch;
-        })
-      )
-    );
-    return;
-  }
-
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(response => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          }
-          return response;
-        }).catch(() => {
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Aggiorna la cache solo con risposte valide
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => {
+        // Rete non disponibile: usa la cache
+        return caches.match(event.request).then(cached => {
+          if (cached) return cached;
+          // Fallback finale per navigazione: restituisce index.html dalla cache
           if (event.request.mode === 'navigate') {
-            return caches.match('./index.html');
+            return caches.match('/index.html');
           }
+          return new Response('Offline', { status: 503 });
         });
       })
-    );
-    return;
-  }
-
-  event.respondWith(fetch(event.request));
+  );
 });
