@@ -570,7 +570,7 @@
 
     /* ── INSTALL BUTTON ── */
     #btn-install {
-      display: none;
+      display: block;
       width: 100%;
       margin-top: 0.75rem;
       padding: 0.75rem;
@@ -587,7 +587,7 @@
       transition: color 0.2s, border-color 0.2s;
     }
     #btn-install:hover { color: var(--amber); border-color: var(--amber); }
-    #btn-install.visible { display: block; }
+    #btn-install.installed { display: none; }
   </style>
 </head>
 <body>
@@ -881,7 +881,7 @@
     const btn = document.getElementById('btn-cont');
     if (contMode) {
       btn.classList.add('cont-active');
-      btn.innerHTML = '■ FERMA POMPA CONTINUA <span class="sub">CLICCA PER FERMARE L'EROGAZIONE</span>';
+      btn.innerHTML = '■ FERMA POMPA CONTINUA <span class="sub">CLICCA PER FERMARE L\'EROGAZIONE</span>';
     } else {
       btn.classList.remove('cont-active');
       btn.innerHTML = '⏵⏵ POMPA CONTINUA <span class="sub">PRIMA INSTALLAZIONE · CLICCA PER FERMARE</span>';
@@ -988,26 +988,53 @@
   let deferredPrompt = null;
   const btnInstall = document.getElementById('btn-install');
 
+  // Aggiorna il testo del pulsante in base allo stato
+  function updateInstallButton() {
+    if (deferredPrompt) {
+      btnInstall.textContent = '⬇ INSTALLA APP SUL DISPOSITIVO';
+    } else {
+      // Su iOS/desktop o se già installata: mostra istruzioni manuali
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isIOS) {
+        btnInstall.textContent = '⬇ INSTALLA: usa Safari → Condividi → Aggiungi a Home';
+      } else {
+        btnInstall.textContent = '⬇ INSTALLA: menu Chrome (⋮) → Aggiungi a schermata home';
+      }
+    }
+  }
+
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    btnInstall.classList.add('visible');
+    updateInstallButton();
   });
 
   window.addEventListener('appinstalled', () => {
-    btnInstall.classList.remove('visible');
     deferredPrompt = null;
+    btnInstall.classList.add('installed'); // nasconde solo dopo installazione
     log('App installata con successo!', 'ok');
   });
 
   async function installApp() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    log(outcome === 'accepted' ? 'Installazione avviata.' : 'Installazione annullata.', 'info');
-    deferredPrompt = null;
-    btnInstall.classList.remove('visible');
+    if (deferredPrompt) {
+      // Prompt automatico Android/Chrome
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      log(outcome === 'accepted' ? 'Installazione avviata.' : 'Installazione annullata.', 'info');
+      deferredPrompt = null;
+      updateInstallButton();
+    } else {
+      // Istruzioni manuali — apre una finestra di dialogo
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const msg = isIOS
+        ? 'Per installare su iOS:\n1. Apri questa pagina in Safari\n2. Tocca il pulsante Condividi (□↑)\n3. Scegli "Aggiungi a schermata Home"'
+        : 'Per installare su Android/Desktop:\n1. Tocca il menu Chrome (⋮) in alto a destra\n2. Scegli "Aggiungi a schermata Home" o "Installa app"';
+      alert(msg);
+    }
   }
+
+  // Inizializza testo pulsante al caricamento
+  updateInstallButton();
 </script>
 </body>
 </html>
