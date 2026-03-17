@@ -1,9 +1,15 @@
 {
+  "id": "/",
   "name": "MOTOIL — ChainOiler",
   "short_name": "MOTOIL",
   "description": "Controllo BLE per pompa olio automatica ESP32-C3",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait",
   "background_color": "#0b0c0e",
   "theme_color": "#0b0c0e",
@@ -33,6 +39,5 @@
       "description": "Invia comando OFF alla pompa",
       "url": "/?action=off"
     }
-  ],
-  "scope": "/"
+  ]
 }

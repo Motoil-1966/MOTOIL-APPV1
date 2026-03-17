@@ -6,7 +6,7 @@
   <title>MOTOIL — Controllo Pompa</title>
 
   <!-- PWA -->
-  <link rel="manifest" href="./manifest.json" />
+  <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -253,6 +253,47 @@
 
     .btn-power:disabled { opacity: 0.25; cursor: not-allowed; }
     .btn-power .sub { display: block; font-size: 1.08rem; font-family: var(--mono); letter-spacing: 0.18em; font-weight: 700; margin-top: 4px; opacity: 0.7; }
+
+
+    /* ── CONTINUOUS BUTTON ── */
+    .btn-cont {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 1rem 1rem;
+      border: 1px solid #5a3a00;
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1.45rem;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      border-radius: 2px;
+      background: transparent;
+      color: var(--amber);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+    .btn-cont::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      background: rgba(240,176,48,0.1);
+      transition: opacity 0.25s;
+    }
+    .btn-cont:hover:not(:disabled)::after { opacity: 1; }
+    .btn-cont:hover:not(:disabled) { border-color: var(--amber); }
+    .btn-cont.cont-active {
+      border-color: var(--amber);
+      background: rgba(240,176,48,0.12);
+      animation: cont-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes cont-pulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(240,176,48,0); }
+      50% { box-shadow: 0 0 18px rgba(240,176,48,0.35); }
+    }
+    .btn-cont:disabled { opacity: 0.25; cursor: not-allowed; }
+    .btn-cont .sub { display: block; font-size: 0.92rem; font-family: var(--mono); letter-spacing: 0.16em; font-weight: 700; margin-top: 3px; opacity: 0.65; }
 
     /* ── PUMP VISUALIZER ── */
     .pump-viz {
@@ -627,6 +668,13 @@
           <span class="sub">SPEGNI POMPA</span>
         </button>
       </div>
+
+      <!-- PULSANTE CONTINUO — prima installazione / priming -->
+      <button class="btn-cont" id="btn-cont" onclick="toggleContinuous()" disabled>
+        ⏵⏵ POMPA CONTINUA
+        <span class="sub">PRIMA INSTALLAZIONE · CLICCA PER FERMARE</span>
+      </button>
+
     </div>
   </div>
 
@@ -641,8 +689,8 @@
         <div class="field">
           <label>Periodo (minuti)</label>
           <div class="field-row">
-            <input type="range" id="cfg-periodo" min="1" max="120" value="5" oninput="updateLabel('cfg-periodo','lbl-periodo')" />
-            <span class="field-val" id="lbl-periodo">5</span>
+            <input type="range" id="cfg-periodo" min="1" max="120" value="15" oninput="updateLabel('cfg-periodo','lbl-periodo')" />
+            <span class="field-val" id="lbl-periodo">15</span>
           </div>
         </div>
         <div class="field">
@@ -690,6 +738,7 @@
   let characteristic = null;
   let connected = false;
   let sysState = null; // null = unknown, true = ON, false = OFF
+  let contMode = false; // true = pompa in modalità continua
 
   // ── INIT ──────────────────────────────────────
   window.addEventListener('DOMContentLoaded', () => {
@@ -769,8 +818,8 @@
       await characteristic.writeValue(encoder.encode(cmd));
       log(`→ ${cmd}`, 'sent');
 
-      if (cmd === 'ON')  { sysState = true;  updateSysState(); }
-      if (cmd === 'OFF') { sysState = false; updateSysState(); }
+      if (cmd === 'ON')  { sysState = true;  contMode = false; updateContButton(); updateSysState(); }
+      if (cmd === 'OFF') { sysState = false; contMode = false; updateContButton(); updateSysState(); }
     } catch (e) {
       log(`Errore invio "${cmd}": ${e.message}`, 'err');
     }
@@ -796,6 +845,49 @@
     }
   }
 
+  // ── MODALITÀ CONTINUA ────────────────────────
+  async function toggleContinuous() {
+    if (!characteristic) return;
+    if (!contMode) {
+      // Attiva modalità continua
+      await sendCmdRaw('CONT');
+      contMode = true;
+      sysState = true;
+      updateSysState();
+      updateContButton();
+      log('▶▶ Pompa continua ATTIVATA — usala per la prima installazione', 'sent');
+    } else {
+      // Ferma modalità continua
+      await sendCmdRaw('OFF');
+      contMode = false;
+      sysState = false;
+      updateSysState();
+      updateContButton();
+      log('■ Pompa continua FERMATA', 'sent');
+    }
+  }
+
+  async function sendCmdRaw(cmd) {
+    if (!characteristic) return;
+    try {
+      const encoder = new TextEncoder();
+      await characteristic.writeValue(encoder.encode(cmd));
+    } catch (e) {
+      log(`Errore invio "${cmd}": ${e.message}`, 'err');
+    }
+  }
+
+  function updateContButton() {
+    const btn = document.getElementById('btn-cont');
+    if (contMode) {
+      btn.classList.add('cont-active');
+      btn.innerHTML = '■ FERMA POMPA CONTINUA <span class="sub">CLICCA PER FERMARE L'EROGAZIONE</span>';
+    } else {
+      btn.classList.remove('cont-active');
+      btn.innerHTML = '⏵⏵ POMPA CONTINUA <span class="sub">PRIMA INSTALLAZIONE · CLICCA PER FERMARE</span>';
+    }
+  }
+
   // ── UI STATE ──────────────────────────────────
   function setConnected(state) {
     connected = state;
@@ -809,12 +901,14 @@
     btnText.textContent = state ? '◎ DISCONNETTI' : '◉ CONNETTI A MOTOIL';
     footer.textContent = state ? `BLE: ${device?.name || 'ONLINE'}` : 'BLE: OFFLINE';
 
-    ['btn-on','btn-off','btn-cfg'].forEach(id => {
+    ['btn-on','btn-off','btn-cfg','btn-cont'].forEach(id => {
       document.getElementById(id).disabled = !state;
     });
 
     if (!state) {
       sysState = null;
+      contMode = false;
+      updateContButton();
       updateSysState();
     }
   }
@@ -827,8 +921,8 @@
     const circle = document.getElementById('pump-circle');
 
     if (sysState === true) {
-      dotSys.className = 'dot active';
-      labelSys.textContent = 'Attivo';
+      dotSys.className = contMode ? 'dot pumping' : 'dot active';
+      labelSys.textContent = contMode ? 'Continuo' : 'Attivo';
       btnOn.classList.add('active-state');
       btnOff.classList.remove('active-state');
       circle.classList.add('on');
@@ -869,7 +963,7 @@
   // ── SERVICE WORKER ────────────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register("./sw.js")
+      navigator.serviceWorker.register('/sw.js')
         .then(reg => log('App pronta per uso offline.', 'ok'))
         .catch(err => log(`SW non registrato: ${err.message}`, 'err'));
     });

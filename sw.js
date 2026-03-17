@@ -1,4 +1,6 @@
-const CACHE_NAME = 'motoil-v3'; // incrementa versione ad ogni deploy
+// MOTOIL — Service Worker v4
+// Incrementa CACHE_NAME ad ogni deploy per forzare aggiornamento
+const CACHE_NAME = 'motoil-v4';
 
 const ASSETS = [
   '/',
@@ -6,52 +8,66 @@ const ASSETS = [
   '/manifest.json'
 ];
 
-// Installa e mette in cache le risorse principali
+// ── INSTALL ───────────────────────────────────────────────────────────────
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(ASSETS))
+      .catch(err => console.warn('[SW] Pre-cache fallito:', err))
   );
 });
 
-// Rimuove le vecchie cache e prende possesso dei client
+// ── ACTIVATE ──────────────────────────────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+    caches.keys()
+      .then(keys =>
+        Promise.all(
+          keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
+      .catch(err => console.warn('[SW] Activate error:', err))
   );
 });
 
-// Strategia: network-first con fallback su cache
-// Se la rete è assente, risponde dalla cache (fondamentale per iOS)
+// ── FETCH ─────────────────────────────────────────────────────────────────
+// IMPORTANTE: non deve MAI lanciare eccezioni non gestite.
+// Un SW che crasha ripetutamente porta Chrome a de-registrarlo
+// e rimuovere il WebAPK dall'launcher Android.
 self.addEventListener('fetch', event => {
-  // Ignora richieste non-GET e richieste cross-origin
-  if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  if (!req.url.startsWith(self.location.origin)) return;
+  if (!req.url.startsWith('http')) return;
 
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Aggiorna la cache solo con risposte valide
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => {
-        // Rete non disponibile: usa la cache
-        return caches.match(event.request).then(cached => {
-          if (cached) return cached;
-          // Fallback finale per navigazione: restituisce index.html dalla cache
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return new Response('Offline', { status: 503 });
-        });
-      })
-  );
+  event.respondWith(handleFetch(req));
 });
+
+async function handleFetch(req) {
+  try {
+    const networkResponse = await fetch(req);
+    if (networkResponse && networkResponse.status === 200) {
+      const clone = networkResponse.clone();
+      caches.open(CACHE_NAME)
+        .then(cache => cache.put(req, clone))
+        .catch(() => {});
+    }
+    return networkResponse;
+  } catch (_networkError) {
+    const cached = await caches.match(req);
+    if (cached) return cached;
+
+    if (req.mode === 'navigate') {
+      const shell = await caches.match('/index.html');
+      if (shell) return shell;
+    }
+
+    return new Response('Offline', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
+}
