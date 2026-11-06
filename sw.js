@@ -1,11 +1,16 @@
-// MOTOIL — Service Worker v4
+// MOTOIL — Service Worker v7
 // Incrementa CACHE_NAME ad ogni deploy per forzare aggiornamento
-const CACHE_NAME = 'motoil-v4';
+const CACHE_NAME = 'motoil-v7';
 
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon.png'
 ];
 
 // ── INSTALL ───────────────────────────────────────────────────────────────
@@ -60,7 +65,7 @@ async function handleFetch(req) {
     if (cached) return cached;
 
     if (req.mode === 'navigate') {
-      const shell = await caches.match('/index.html');
+      const shell = await caches.match('./index.html');
       if (shell) return shell;
     }
 
